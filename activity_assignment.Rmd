@@ -1,0 +1,85 @@
+##Peer Graded Assignment: Prediction Assignment Writeup
+
+###Background
+
+#####Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+###Project goal
+
+#####The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+###Getting the data
+```{r}
+train_URL <-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_URL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+download.file(train_URL, destfile="train.csv", method="curl")
+download.file(test_URL, destfile="test.csv", method="curl")
+
+train_dataset <- read.csv("train.csv")
+test_dataset <- read.csv("test.csv")
+```
+
+###Presenting the basic characteristics of the datasets
+```{r}
+dim(train_dataset)
+dim(test_dataset)
+names(train_dataset)
+```
+
+### removing the first 7 unrelated colums
+```{r}
+train_dataset <- train_dataset[ , -c(1:7)]
+test_dataset <- test_dataset[ , -c(1:7)]
+```
+
+###removing NA values
+```{r}
+v_NA <- sapply(train_dataset, function (x) any(is.na(x) | x == ""))
+train_dataset <- train_dataset[, names(v_NA[!v_NA])]
+```
+
+###staying with 53 features left
+```{r}
+dim(train_dataset)
+```
+
+###building a model
+#####let's try not to be too fancy, I choose the Random Forest model
+
+###loading necessary libraries
+```{r}
+library(caret)
+library(randomForest)
+library(e1071)
+```
+
+###dividing the training dataset 60/40
+```{r}
+set.seed(730108)
+ts <- createDataPartition(train_dataset$classe, p = 0.60, list = FALSE)
+train_set <- train_dataset[ts, ]
+test_set <- train_dataset[-ts, ]
+```
+
+###actual training
+```{r}
+ctr <- trainControl(method = "cv", 5)
+fit <- train(classe ~ ., data = train_set, method = "rf", trControl = ctr, ntree = 250)
+```
+
+###presenting the training results & applying them to the training dataset
+```{r}
+fit
+p <- predict(fit, test_set)
+confusionMatrix(test_set$classe, p)
+```
+
+###Accurancy over 99% looks too optimistic but well...
+###Applying the trained model to the test dataset of 20 records
+```{r}
+test_results <- predict(fit, test_dataset)
+test_results
+```
+
+###Suprisingly the Assignment Quiz gives 20/20 for 100% result.
